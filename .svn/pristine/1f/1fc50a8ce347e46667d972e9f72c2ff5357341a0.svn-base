@@ -1,0 +1,156 @@
+package com.lion.component;
+
+import java.util.ArrayList;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+/**
+ * 列表加载助手
+ * 
+ * @author zhangbp
+ * 
+ */
+
+public abstract class ListLoadingHelper extends LoadingHelper {
+
+	private int[] itemViewIds;
+	private LayoutInflater mLayoutInflater;
+	private CommonAdapter<Object> mCommonAdapter;
+
+	public ListLoadingHelper(Context mContext) {
+		mLayoutInflater = LayoutInflater.from(mContext);
+		mCommonAdapter = new CurrentCommonAdapter();
+	}
+
+	/**
+	 * 添加数据
+	 * 
+	 * @param itemData
+	 * @param loadStatus
+	 */
+
+	public void appendData(Object itemData, int loadStatus, int loadType) {
+		if (loadStatus == LOAD_STATUS_SUCCEED) {
+			if (loadType == LOAD_TYPE_PULLREFRESH) {
+				mCommonAdapter.clearData();
+			}
+			mCommonAdapter.appendData(itemData);
+		}
+		notifyStatusChange(loadStatus,loadType);
+	}
+
+	/**
+	 * 添加数据
+	 * 
+	 * @param list
+	 * @param loadStatus
+	 */
+
+	public void appendAllData(ArrayList<? extends Object> list, int loadStatus, int loadType) {
+		if (loadStatus == LOAD_STATUS_SUCCEED || loadStatus == LOAD_STATUS_COMPLETE) {
+			if (loadType == LOAD_TYPE_PULLREFRESH) {
+				mCommonAdapter.replaceAllData(list);
+			} else {
+				mCommonAdapter.appendAllData(list);
+			}
+		}
+		notifyStatusChange(loadStatus,loadType);
+	}
+
+	/**
+	 * 通知状态发生变化
+	 * 
+	 * @param loadStatus
+	 * @author zhangbp
+	 */
+
+	public void notifyStatusChange(int loadStatus,int loadType) {
+		// TODO Auto-generated method stub
+		notifyStatusChange(loadStatus, mCommonAdapter.getCount(),loadType);
+	}
+
+	/**
+	 * 设置itemView
+	 * 
+	 * @param resid
+	 */
+
+	public void setItemResId(int... resid) {
+		itemViewIds = resid;
+	}
+
+	/**
+	 * 多视图重写该方法，返回itemView的下标
+	 * 
+	 * @param position
+	 * @return
+	 * @author zhangbp
+	 */
+
+	public int getItemViewType(int position) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	/**
+	 * 返回CommonAdapter
+	 * 
+	 * @return
+	 */
+	public CommonAdapter<Object> getAdapter() {
+		return this.mCommonAdapter;
+	}
+
+	/**
+	 * 设置CommonAdapter,大多数不需要作用此方法
+	 * 
+	 * @param mCommonAdapter
+	 * @author zhangbp
+	 */
+
+	public void setAdapter(CommonAdapter<Object> mCommonAdapter) {
+		this.mCommonAdapter = mCommonAdapter;
+	}
+
+	class CurrentCommonAdapter extends CommonAdapter<Object> {
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			// TODO Auto-generated method stub
+			if (convertView == null) {
+				convertView = mLayoutInflater.inflate(itemViewIds[getItemViewType(position)], parent, false);
+			}
+			if (convertView instanceof DrawItemListener) {
+				((DrawItemListener) convertView).drawItem(getItem(position), position, this);
+			}
+			return convertView;
+		}
+
+		@Override
+		public int getViewTypeCount() {
+			// TODO Auto-generated method stub
+			return itemViewIds.length;
+		}
+
+		@Override
+		public int getItemViewType(int position) {
+			// TODO Auto-generated method stub
+			return ListLoadingHelper.this.getItemViewType(position);
+		}
+	}
+
+	/**
+	 * 绘制ItemView接口
+	 * 
+	 * @author zhangbp
+	 * 
+	 */
+
+	public interface DrawItemListener {
+		public void drawItem(Object data, int position, CommonAdapter<?> mCommonAdapter);
+	}
+
+}

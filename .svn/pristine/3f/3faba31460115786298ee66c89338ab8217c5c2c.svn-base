@@ -1,0 +1,34 @@
+package com.lion.apiDispose;
+
+import android.content.Context;
+import android.widget.Toast;
+
+import com.lion.R;
+import com.lion.component.vo.ResultVo;
+
+/**
+ * 简单的结果处理
+ * 
+ * @author zhangbp
+ * 
+ */
+public class SimpleLoadHelperListening implements LoadHelperListening {
+	private Context mContext;
+
+	public SimpleLoadHelperListening(Context mContext) {
+		this.mContext = mContext;
+	}
+
+	@Override
+	public void loadComplete(Object data, int loadType) {
+		// TODO Auto-generated method stub
+		if (data != null) {
+			ResultVo<?> mBaseVo = (ResultVo<?>) data;
+			Toast.makeText(mContext, mBaseVo.msg, Toast.LENGTH_SHORT).show();
+		} else {
+			Toast.makeText(mContext, R.string.toast_2, Toast.LENGTH_SHORT).show();
+		}
+
+	}
+
+}

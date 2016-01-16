@@ -1,0 +1,184 @@
+package com.lion.apiDispose;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
+
+import android.content.Context;
+
+import com.android.volley.Request.Method;
+import com.lion.component.ListLoadingHelper;
+import com.lion.component.vo.ResultVo;
+
+/**
+ * 列表加载,支持一次多个接口,多个接口需要设置LoadHelperListening处理数据
+ * 
+ * @author zhangbp
+ */
+
+public class CommonListLoadingHelper extends ListLoadingHelper {
+	private String listApiName;
+	public RequestParameters firstPageParameters;
+	private Context mContext;
+	private Type mType;
+	public int curPage = 0;
+	private String[] otherAipName;
+	private String firstPageApiCode;
+	public LoadHelperListening mLoadHelperListening;
+
+	public CommonListLoadingHelper(Context mContext, Type mType, String listApiName) {
+		super(mContext);
+		this.mContext = mContext;
+		this.listApiName = listApiName;
+		this.mType = mType;
+	}
+
+	public CommonListLoadingHelper(Context mContext, Type mType, String listApiName, String... otherAipName) {
+		super(mContext);
+		this.mContext = mContext;
+		this.listApiName = listApiName;
+		this.mType = mType;
+		this.otherAipName = otherAipName;
+	}
+
+	/**
+	 * 设置请求的参数
+	 * 
+	 * @param mRequestParameters
+	 * @return
+	 */
+
+	public CommonListLoadingHelper setRequestParameters(RequestParameters mRequestParameters) {
+		this.firstPageParameters = mRequestParameters;
+		return this;
+	}
+
+	@Override
+	public void onLoadPage(final int loadType) {
+		// TODO Auto-generated method stub
+		if (firstPageParameters == null) {
+			throw new NullPointerException("RequestParameters is null");
+		}
+
+		notifyStatusChange(LOAD_STATUS_ING, loadType);
+		int requestPage = getRequestPage(loadType);
+		RequestParameters currentParam = disposeRequestParameters(requestPage);
+		String requestParam = currentParam.getFinalParameter();
+		String httpUrl = getRequestUrl(requestPage);
+		LionApi.getEasyRequestVolley(Method.POST, httpUrl).addParameters("data", requestParam).executeAsync(mContext, new RequestListener(mContext, mType) {
+			@Override
+			public void onComplete(String httpUrl, Object data) {
+				// TODO Auto-generated method stub
+				super.onComplete(httpUrl, data);
+				CommonListLoadingHelper.this.isPermission(isPermission(data, listApiName));
+				if (otherAipName == null) { // list单个api
+					if (data != null) {
+						@SuppressWarnings("unchecked")
+						Map<String, ResultVo<?>> mapResult = (Map<String, ResultVo<?>>) data;
+						ResultVo<?> listResult = mapResult.get(listApiName);
+						drawListView(listResult, loadType);
+					} else {
+						notifyStatusChange(LOAD_STATUS_FAILURE, loadType);
+					}
+				}
+				if (mLoadHelperListening != null) {
+					mLoadHelperListening.loadComplete(data, loadType);
+				}
+			}
+		});
+	}
+
+	/**
+	 * 是否有访问权限
+	 * 
+	 * @return
+	 */
+	public void isPermission(boolean isPermission) {
+
+	}
+
+	/**
+	 * @param loadType
+	 *            处理列表请求参数
+	 * @author zhangbp
+	 * @return
+	 */
+
+	public RequestParameters disposeRequestParameters(int requestPage) {
+
+		TreeMap<String, String> listParam = firstPageParameters.getParameterByApiName(listApiName);
+		listParam.put("page", requestPage + "");
+		RequestParameters currentParam = null;
+		if (requestPage > 1) {
+			currentParam = new RequestParameters(firstPageParameters.api_key, firstPageParameters.api_secret, firstPageParameters.userToken, firstPageParameters.userId);
+			currentParam.putParameter(listApiName, listParam);
+		} else {
+			currentParam = firstPageParameters;
+		}
+		return currentParam;
+	}
+
+	public int getRequestPage(int loadType) {
+		return loadType == LOAD_TYPE_PULLREFRESH ? 1 : curPage + 1;
+	}
+
+	/**
+	 * 返回请求的Url
+	 * 
+	 * @return
+	 * @author zhangbp
+	 */
+	public String getRequestUrl(int requestPage) {
+
+		String currentRequest = "";
+
+		if (requestPage > 1) {
+			currentRequest = listApiName;
+		} else {
+			if (firstPageApiCode == null || firstPageApiCode.equals("")) {
+				StringBuffer sb = new StringBuffer(listApiName);
+				if (otherAipName != null) {
+					for (String apiName : otherAipName) {
+						sb.append("," + apiName);
+					}
+				}
+				firstPageApiCode = sb.toString();
+			}
+			currentRequest = firstPageApiCode;
+		}
+
+		return String.format(ApiList.ApiUrl, currentRequest, firstPageParameters.getCacheKey());
+	}
+
+	/**
+	 * 绘制ListView
+	 * 
+	 * @param data
+	 * @param loadType
+	 */
+
+	public void drawListView(ResultVo<?> listResult, int loadType) {
+		if (listResult != null && listResult.isSuccess) {
+			if (listResult.count > 0) {
+				appendAllData((ArrayList<?>) listResult.results, listResult.curPage < listResult.totalPages ? LOAD_STATUS_SUCCEED : LOAD_STATUS_COMPLETE, loadType);
+				curPage = listResult.curPage;
+			} else {
+				notifyStatusChange(LOAD_STATUS_COMPLETE, loadType);
+			}
+		} else {
+			notifyStatusChange(LOAD_STATUS_FAILURE, loadType);
+		}
+	}
+
+	/**
+	 * 设置加载完成的监听器
+	 * 
+	 * @param mLoadHelperListening
+	 */
+
+	public void setLoadHelperListening(LoadHelperListening mLoadHelperListening) {
+		this.mLoadHelperListening = mLoadHelperListening;
+	}
+
+}

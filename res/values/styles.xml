@@ -1,0 +1,27 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="item_loading_progressbar">
+        <item name="android:layout_width">92.5dip</item>
+        <item name="android:layout_height">92.5dip</item>
+    </style>
+
+    <style name="text_black_14sp">
+        <item name="android:textSize">14.0sp</item>
+        <item name="android:typeface">sans</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">#ff333333</item>
+    </style>
+
+    <style name="lion_dialog_transparent" parent="@style/lion_dialog">
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <style name="lion_dialog" parent="@android:Theme.Dialog">
+        <item name="android:windowFrame">@null</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+
+</resources>
